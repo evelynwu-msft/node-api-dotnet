@@ -162,7 +162,7 @@
 
     <PropertyGroup>
       <NodeApiGeneratorResponseFile>$(IntermediateOutputPath)$(NodeApiGeneratorAssemblyName).rsp</NodeApiGeneratorResponseFile>
-      <_NodeApiGeneratorTargetingPacks>@(TargetingPack, '%3B')</_NodeApiGeneratorTargetingPacks>
+      <_NodeApiGeneratorTargetingPacks>@(ResolvedTargetingPack->'%(Path)', '%3B')</_NodeApiGeneratorTargetingPacks>
       <_NodeApiGeneratorAssemblyReferences>@(_NodeApiAllReferenceAssemblies, '%3B')</_NodeApiGeneratorAssemblyReferences>
       <_NodeApiGeneratorTypeDefs>@(_NodeApiAllTypeDefs, '%3B')</_NodeApiGeneratorTypeDefs>
     </PropertyGroup>

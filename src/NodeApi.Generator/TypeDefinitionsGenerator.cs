@@ -1340,11 +1340,20 @@ type DateTime = Date & { kind?: 'utc' | 'local' | 'unspecified' }
         }
 
         // Exclude methods that have pointer parameters because they can't be marshalled to JS.
-        if (method.GetParameters().Any((p) => p.ParameterType.IsPointer) ||
+        // Prior to .NET 8 function pointers were represented as IntPtr.
+#if NETSTANDARD || NETFRAMEWORK
+        if (method.GetParameters().Any((p) => p.ParameterType.IsPointer || p.ParameterType == typeof(IntPtr)) ||
             method is MethodInfo { ReturnParameter.ParameterType.IsPointer: true })
         {
             return true;
         }
+#else
+        if (method.GetParameters().Any((p) => p.ParameterType.IsPointer || p.ParameterType.IsFunctionPointer || p.ParameterType.IsUnmanagedFunctionPointer) ||
+            method is MethodInfo { ReturnParameter.ParameterType.IsPointer: true })
+        {
+            return true;
+        }
+#endif
 
         if (method.Name == nameof(TaskAsyncEnumerableExtensions.ConfigureAwait) &&
             method.DeclaringType?.FullName == typeof(TaskAsyncEnumerableExtensions).FullName)

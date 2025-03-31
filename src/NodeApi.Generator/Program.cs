@@ -51,7 +51,7 @@ public static class Program
                 Usage: node-api-dotnet-generator [options...]
                   -a --asssembly  Path to input assembly (required)
                   -f --framework  .NET target framework moniker (optional)
-                  -p --pack       Targeting pack (optional, multiple)
+                  -p --pack       Path to root directory of targeting pack(s) (optional, multiple)
                   -r --reference  Path to reference assembly (optional, multiple)
                   -t --typedefs   Path to output type definitions file (required)
                   -m --module     Generate JS module(s) alongside typedefs (optional, multiple)
@@ -121,7 +121,7 @@ public static class Program
             return false;
         }
 
-        List<string> targetingPacks = new();
+        List<string> targetingPackDirectories = new();
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -156,7 +156,7 @@ public static class Program
                 case "-p":
                 case "--pack":
                 case "--packs":
-                    AddItems(targetingPacks, args[++i]);
+                    AddItems(targetingPackDirectories, args[++i]);
                     break;
 
                 case "-r":
@@ -221,7 +221,7 @@ public static class Program
             }
         }
 
-        ResolveSystemAssemblies(targetingPacks);
+        ResolveSystemAssemblies(targetingPackDirectories);
 
         bool HasAssemblyExtension(string fileName) =>
             fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
@@ -397,7 +397,7 @@ public static class Program
     }
 
     private static void ResolveSystemAssemblies(
-        List<string> targetingPacks)
+        List<string> targetingPackDirectories)
     {
         if (s_targetFramework == null)
         {
@@ -411,7 +411,7 @@ public static class Program
 
         if (s_targetFramework.StartsWith("net4"))
         {
-            if (targetingPacks.Count > 0)
+            if (targetingPackDirectories.Count > 0)
             {
                 Console.WriteLine("Ignoring target packs for .NET Framework target");
             }
@@ -436,34 +436,34 @@ public static class Program
         }
         else
         {
-            if (targetingPacks.Count == 0)
+            if (targetingPackDirectories.Count == 0)
             {
-                // If no targeting packs were specified, use the default targeting pack for .NET.
-                targetingPacks.Add("Microsoft.NETCore.App");
-            }
-
-            string runtimeDirectory = RuntimeEnvironment.GetRuntimeDirectory();
-            if (runtimeDirectory[runtimeDirectory.Length - 1] == Path.DirectorySeparatorChar)
-            {
-                runtimeDirectory = runtimeDirectory.Substring(
-                    0, runtimeDirectory.Length - 1);
-            }
-            string dotnetRootDirectory = Path.GetDirectoryName(Path.GetDirectoryName(
-                Path.GetDirectoryName(runtimeDirectory)!)!)!;
-
-            foreach (string targetPack in targetingPacks)
-            {
+                // If no targeting packs were specified, use the default targeting pack for .NET
+                // and calculate its root directory
+                string runtimeDirectory = RuntimeEnvironment.GetRuntimeDirectory();
+                if (runtimeDirectory[runtimeDirectory.Length - 1] == Path.DirectorySeparatorChar)
+                {
+                    runtimeDirectory = runtimeDirectory.Substring(
+                        0, runtimeDirectory.Length - 1);
+                }
+                string dotnetRootDirectory = Path.GetDirectoryName(Path.GetDirectoryName(
+                    Path.GetDirectoryName(runtimeDirectory)!)!)!;
                 string targetPackDirectory = Path.Combine(
                     dotnetRootDirectory,
                     "packs",
-                    targetPack + ".Ref");
-                if (Directory.Exists(targetPackDirectory))
+                    "Microsoft.NETCore.App" + ".Ref");
+
+                targetingPackDirectories.Add(targetPackDirectory);
+            }
+         
+            foreach (string targetPackDirectory in targetingPackDirectories)
+            {
+                string[] refDirectoryNames = { "ref", "lib" };
+
+                foreach (string refDirectoryName in refDirectoryNames)
                 {
-                    string? refAssemblyDirectory = Directory.GetDirectories(targetPackDirectory)
-                        .OrderByDescending((d) => Path.GetFileName(d))
-                        .Select((d) => Path.Combine(d, "ref", s_targetFramework))
-                        .FirstOrDefault(Directory.Exists);
-                    if (refAssemblyDirectory != null)
+                    string refAssemblyDirectory = Path.Combine(targetPackDirectory, refDirectoryName, s_targetFramework);
+                    if (Directory.Exists(refAssemblyDirectory))
                     {
                         s_referenceAssemblyDirectories.Add(refAssemblyDirectory);
                     }
@@ -494,7 +494,10 @@ public static class Program
                 if (systemAssemblyPath != null)
                 {
                     s_assemblyPaths[i] = systemAssemblyPath;
-                    s_systemAssemblyIndexes.Add(i);
+                    if (!s_assemblyPaths[i].EndsWith("Microsoft.Windows.SDK.NET.dll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        s_systemAssemblyIndexes.Add(i);
+                    }
                 }
                 else
                 {

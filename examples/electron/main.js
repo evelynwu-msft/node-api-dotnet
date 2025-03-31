@@ -14,7 +14,14 @@ function createWindow () {
 
   const dotnet = require('node-api-dotnet')
   const dotnetVersion = dotnet.System.Environment.Version.toString()
+  require('./bin/Microsoft.Windows.SDK.NET.js')
+  const systemMemoryUsageReport = dotnet.Windows.System.Diagnostics.SystemDiagnosticInfo.GetForCurrentSystem().MemoryUsage.GetReport()
+  const committedMemory = (systemMemoryUsageReport.CommittedSizeInBytes / 1024 / 1024).toString()
+  const totalMemory = (systemMemoryUsageReport.TotalPhysicalSizeInBytes / 1024 / 1024).toString()
   win.webContents.send('dotnet-version', dotnetVersion)
+  win.webContents.send('system-memory-usage-committed', committedMemory)
+  win.webContents.send('system-memory-usage-total', totalMemory)
+  const dotnetVersion2 = dotnet.System.Environment.Version.toString()
 }
 
 app.whenReady().then(() => {

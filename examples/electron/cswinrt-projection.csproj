@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
+    <OutDir>bin</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NodeApiSystemReferenceAssembly Include="Microsoft.Windows.SDK.NET" />
+    <!-- <NodeApiSystemReferenceAssembly Include="WinRT.Runtime" /> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="$(NodeApiDotnetPackageVersion)" />
+    <PackageReference Include="Microsoft.JavaScript.NodeApi.Generator" Version="$(NodeApiDotnetPackageVersion)" />
+  </ItemGroup>
+
+</Project>
